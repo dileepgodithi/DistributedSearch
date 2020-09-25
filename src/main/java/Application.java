@@ -1,3 +1,4 @@
+import model.DocumentData;
 import search.TFIDF;
 
 import java.io.BufferedReader;
@@ -14,11 +15,11 @@ public class Application {
 
         System.out.println(documentsDirectory.list());
         System.out.println();
-        List<String> documents = Arrays.asList(documentsDirectory.list())
-                .stream()
-                .map(doc -> DIRECTORY + "/" + doc)
-                .collect(Collectors.toList());
-        System.out.println(documents);
+//        List<String> documents = Arrays.asList(documentsDirectory.list())
+//                .stream()
+//                .map(doc -> DIRECTORY + "/" + doc)
+//                .collect(Collectors.toList());
+//        System.out.println(documents);
 
         List<String> docs = new ArrayList<>();
         for(String doc : documentsDirectory.list()){
@@ -35,7 +36,7 @@ public class Application {
     }
 
     private static void findRelevantDocuments(List<String> documents, List<String> terms) throws FileNotFoundException {
-        Map<String, Map<String, Double>> docInfo = new HashMap<>();
+        Map<String, DocumentData> docInfo = new HashMap<>();
         //get words from documents
         for(String document : documents){
             FileReader fileReader = new FileReader(document);

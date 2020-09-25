@@ -1,5 +1,7 @@
 package search;
 
+import model.DocumentData;
+
 import java.util.*;
 
 public class TFIDF {
@@ -13,10 +15,10 @@ public class TFIDF {
         return (double) count/wordsInDoc.size();
     }
 
-    public static double calculateIDF(Map<String, Map<String, Double>> docInfo, String term){
+    public static double calculateIDF(Map<String, DocumentData> docInfo, String term){
         int nt = 0;
         for(String document : docInfo.keySet()){
-            if(docInfo.get(document).get(term) > 0)
+            if(docInfo.get(document).getFrequency(term) > 0)
                 nt++;
         }
         return nt == 0 ? 0 : Math.log10((double)docInfo.size()/nt);
@@ -31,31 +33,33 @@ public class TFIDF {
     }
 
     //calculate all term TFs and store in map
-    public static Map<String, Double> createSearchDataInDocument(List<String> wordsInDoc, List<String> searchTerms){
-        Map<String, Double> searchData = new HashMap<>();
+    public static DocumentData createSearchDataInDocument(List<String> wordsInDoc, List<String> searchTerms){
+        DocumentData documentData = new DocumentData();
         for(String term : searchTerms){
             double tf = calculateTF(wordsInDoc, term);
-            searchData.put(term, tf);
+            documentData.putFrequency(term, tf);
         }
-        return searchData;
+        return documentData;
     }
 
     //input docInfo - docs term to TFs map
-    public static Map<Double, List<String>> getDocumentsScore(Map<String, Map<String, Double>> docInfo, List<String> terms) {
+    public static Map<Double, List<String>> getDocumentsScore(Map<String, DocumentData> docInfo, List<String> terms) {
 
         TreeMap<Double, List<String>> scores = new TreeMap<>();
 
         Map<String, Double> termIDFScores = new HashMap<>();
 
+        //calculate IDF for all terms in search query
         for(String term : terms){
             double idf = calculateIDF(docInfo, term);
             termIDFScores.put(term, idf);
         }
 
+        //calculate document score
         for(String document : docInfo.keySet()){
             Double score = 0.0;
             for(String term : terms){
-                score += docInfo.get(document).get(term) * termIDFScores.get(term);
+                score += docInfo.get(document).getFrequency(term) * termIDFScores.get(term);
             }
 
             scores.putIfAbsent(score, new ArrayList<>());
