@@ -1,65 +1,60 @@
-import model.DocumentData;
-import search.TFIDF;
+import cluster.management.LeaderElection;
+import cluster.management.ServiceRegistry;
+import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.WatchedEvent;
+import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.ZooKeeper;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.io.IOException;
 
-public class Application {
-    private static final String DIRECTORY = "resources/books";
-    public static void main(String[] args) throws FileNotFoundException {
-        File documentsDirectory = new File(DIRECTORY);
+public class Application implements Watcher {
+    private ZooKeeper zooKeeper;
+    private String ZOOKEEPER_ADDRESS = "localhost:2181";
+    private int SESSION_TIMEOUT = 5000;
 
-        System.out.println(documentsDirectory.list());
-        System.out.println();
-//        List<String> documents = Arrays.asList(documentsDirectory.list())
-//                .stream()
-//                .map(doc -> DIRECTORY + "/" + doc)
-//                .collect(Collectors.toList());
-//        System.out.println(documents);
+    public static void main(String[] args) throws IOException, KeeperException, InterruptedException {
+        int currentPort = args.length == 1 ? Integer.parseInt(args[0]) : 8080g;
+        Application application = new Application();
+        ZooKeeper zooKeeper = application.connectToZookeeper();
 
-        List<String> docs = new ArrayList<>();
-        for(String doc : documentsDirectory.list()){
-            docs.add(DIRECTORY + "/" + doc);
-        }
+        ServiceRegistry serviceRegistry = new ServiceRegistry(zooKeeper, currentPort);
 
-        String searchTerm = "The best detective that catches many criminals using his detective methods";
+        LeaderElection leaderElection = new LeaderElection(zooKeeper, serviceRegistry);
+        leaderElection.volunteerForLeaderShip();
+        leaderElection.reElectLeader();
 
-        List<String> terms = Arrays.asList(searchTerm.split(" "));
-
-        //System.out.println(docs);
-
-        findRelevantDocuments(docs, terms);
+        application.run();
+        application.close();
+        System.out.println("Disconnected from zookeeper, exiting application");
     }
 
-    private static void findRelevantDocuments(List<String> documents, List<String> terms) throws FileNotFoundException {
-        Map<String, DocumentData> docInfo = new HashMap<>();
-        //get words from documents
-        for(String document : documents){
-            FileReader fileReader = new FileReader(document);
-            BufferedReader bufferedReader = new BufferedReader(fileReader);
-            List<String> lines = bufferedReader.lines().collect(Collectors.toList());
-            List<String> words = TFIDF.getWordsFromDocument(lines);
-            var documentData = TFIDF.createSearchDataInDocument(words, terms);
-            docInfo.put(document, documentData);
-        }
-
-        Map<Double , List<String>> docsByScore =  TFIDF.getDocumentsScore(docInfo, terms);
-
-        printResults(docsByScore);
-
+    public ZooKeeper connectToZookeeper() throws IOException {
+        this.zooKeeper = new ZooKeeper(ZOOKEEPER_ADDRESS, SESSION_TIMEOUT,this);
+        return zooKeeper;
     }
 
-    private static void printResults(Map<Double, List<String>> docsByScore){
-        for(Map.Entry<Double, List<String>> pair : docsByScore.entrySet()){
-            Double score = pair.getKey();
-            List<String> docs = pair.getValue();
-            for(String doc : docs){
-                System.out.println(doc + " -- " + score);
-            }
+    public void run() throws InterruptedException {
+        synchronized (zooKeeper){
+            zooKeeper.wait();
+        }
+    }
+
+    public void close() throws InterruptedException {
+        zooKeeper.close();
+    }
+    @Override
+    public void process(WatchedEvent watchedEvent) {
+        switch (watchedEvent.getType()){
+            case None:
+                if(watchedEvent.getState() == Event.KeeperState.SyncConnected){
+                    System.out.println("Successfully connected to Zookeeper");
+                }
+                else {
+                    synchronized (zooKeeper){
+                        System.out.println("Disconnected from Zookeeper event");
+                        zooKeeper.notifyAll();
+                    }
+                }
         }
     }
 }
