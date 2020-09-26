@@ -35,8 +35,17 @@ public class ServiceRegistry implements Watcher {
         }
     }
 
-    public void registerToCluster() throws KeeperException, InterruptedException, UnknownHostException {
-        String serverAddress = String.format("http://%s:%d", InetAddress.getLocalHost().getCanonicalHostName(), port);
+    public void registerForUpdates(){
+        try {
+            this.updateAddresses();
+        } catch (KeeperException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void registerToCluster(String serverAddress) throws KeeperException, InterruptedException, UnknownHostException {
         if(this.currentZnode != null){
             System.out.println("Already registered to service registy");
             return;
@@ -58,7 +67,7 @@ public class ServiceRegistry implements Watcher {
         }
     }
 
-    public synchronized void updateAddresses() throws KeeperException, InterruptedException {
+    private synchronized void updateAddresses() throws KeeperException, InterruptedException {
         List<String> workerZnodes = zooKeeper.getChildren(REGISTRY_ZNODE, this);
         List<String> addresses = new ArrayList<>();
         for(String node : workerZnodes){
