@@ -8,7 +8,7 @@ import java.util.Map;
 public class Result implements Serializable {
     private Map<String, DocumentData> documentResults;
 
-    Result(){
+    public Result(){
         documentResults = new HashMap<>();
     }
 

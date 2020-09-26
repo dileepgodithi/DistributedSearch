@@ -11,7 +11,6 @@ import java.net.InetSocketAddress;
 import java.util.concurrent.Executors;
 
 public class WebServer {
-    private final String TASK_ENDPOINT = "/task";
     private final String STATUS_ENDPOINT = "/status";
 
     private final int port;

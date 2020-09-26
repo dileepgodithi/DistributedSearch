@@ -29,7 +29,8 @@ public class OnElectionImpl implements OnElection {
             webServer = new WebServer(port, searchWorker);
         }
         try {
-            String serverAddress = String.format("http://%s:%d", InetAddress.getLocalHost().getCanonicalHostName(), this.port);
+            String serverAddress = String.format("http://%s:%d/%s", InetAddress.getLocalHost().getCanonicalHostName(), this.port,
+                    searchWorker.getEndPoint());
             serviceRegistry.registerToCluster(serverAddress);
         } catch (KeeperException e) {
             e.printStackTrace();

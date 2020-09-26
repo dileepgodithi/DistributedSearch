@@ -20,7 +20,7 @@ public class SerializationUtils {
     }
 
     public static Object deSerialize(byte[] data){
-        ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream();
+        ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(data);
         ObjectInput objectInput = null;
         try {
             objectInput = new ObjectInputStream(byteArrayInputStream);
