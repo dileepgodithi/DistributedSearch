@@ -8,18 +8,20 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 
 public class OnElectionImpl implements OnElection {
-    private ServiceRegistry serviceRegistry;
+    private ServiceRegistry workerServiceRegistry;
+    private ServiceRegistry coordinatorServiceRegistry;
     private int port;
     private WebServer webServer;
-    public OnElectionImpl(ServiceRegistry serviceRegistry, int port) {
-        this.serviceRegistry = serviceRegistry;
+    public OnElectionImpl(ServiceRegistry workerServiceRegistry, ServiceRegistry coordinatorServiceRegistry, int port) {
+        this.workerServiceRegistry = workerServiceRegistry;
+        this.coordinatorServiceRegistry = coordinatorServiceRegistry;
         this.port = port;
     }
 
     @Override
     public void onLeader() {
-        serviceRegistry.unRegisterFromCluster();
-        serviceRegistry.registerForUpdates();
+        workerServiceRegistry.unRegisterFromCluster();
+        workerServiceRegistry.registerForUpdates();
     }
 
     @Override
@@ -31,7 +33,7 @@ public class OnElectionImpl implements OnElection {
         try {
             String serverAddress = String.format("http://%s:%d/%s", InetAddress.getLocalHost().getCanonicalHostName(), this.port,
                     searchWorker.getEndPoint());
-            serviceRegistry.registerToCluster(serverAddress);
+            workerServiceRegistry.registerToCluster(serverAddress);
         } catch (KeeperException e) {
             e.printStackTrace();
         } catch (InterruptedException e) {
