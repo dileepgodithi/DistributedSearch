@@ -1,6 +1,8 @@
 import cluster.management.OnElection;
 import cluster.management.ServiceRegistry;
+import networking.WebServer;
 import org.apache.zookeeper.KeeperException;
+import search.SearchWorker;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -8,6 +10,7 @@ import java.net.UnknownHostException;
 public class OnElectionImpl implements OnElection {
     private ServiceRegistry serviceRegistry;
     private int port;
+    private WebServer webServer;
     public OnElectionImpl(ServiceRegistry serviceRegistry, int port) {
         this.serviceRegistry = serviceRegistry;
         this.port = port;
@@ -21,6 +24,10 @@ public class OnElectionImpl implements OnElection {
 
     @Override
     public void onWorker() {
+        SearchWorker searchWorker = new SearchWorker();
+        if(webServer == null){
+            webServer = new WebServer(port, searchWorker);
+        }
         try {
             String serverAddress = String.format("http://%s:%d", InetAddress.getLocalHost().getCanonicalHostName(), this.port);
             serviceRegistry.registerToCluster(serverAddress);
