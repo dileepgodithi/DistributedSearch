@@ -27,7 +27,7 @@ public class OnElectionImpl implements OnElection {
         if(webServer != null){
             webServer.stop();
         }
-        SearchCoordinator searchCoordinator = new SearchCoordinator();
+        SearchCoordinator searchCoordinator = new SearchCoordinator(workerServiceRegistry);
         webServer = new WebServer(port, searchCoordinator);
         webServer.startServer();
         this.registerToCluster(searchCoordinator.getEndPoint(), coordinatorServiceRegistry);
