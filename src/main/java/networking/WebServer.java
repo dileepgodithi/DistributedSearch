@@ -69,4 +69,8 @@ public class WebServer {
         outputStream.close();
         exchange.close();
     }
+
+    public void stop(){
+        server.stop(100);
+    }
 }
