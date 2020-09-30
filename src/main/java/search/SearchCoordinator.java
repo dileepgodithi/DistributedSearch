@@ -2,17 +2,25 @@ package search;
 
 import cluster.management.ServiceRegistry;
 import com.google.protobuf.InvalidProtocolBufferException;
+import model.DocumentData;
 import model.Result;
+import model.SerializationUtils;
 import model.Task;
 import model.proto.SearchModel;
 import networking.OnRequest;
 import networking.WebClient;
 import org.apache.zookeeper.KeeperException;
 
+import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 public class SearchCoordinator implements OnRequest {
+    private static final String DIRECTORY = "resources/books";
     private final String ENDPOINT = "/search";
     private final ServiceRegistry workersServiceRegistry;
     private final WebClient webClient;
@@ -59,7 +67,7 @@ public class SearchCoordinator implements OnRequest {
         List<Task> tasks = createTasks(workers.size(), terms);
         List<Result> results = sendTasksToWorkers(workers, tasks);
 
-        List<SearchModel.Response.DocumentStats> sortedDocuments = aggregateResults(results);
+        List<SearchModel.Response.DocumentStats> sortedDocuments = aggregateResults(results, terms);
         response.addAllRelevantDocuments(sortedDocuments);
 
         return response.build();
@@ -69,37 +77,92 @@ public class SearchCoordinator implements OnRequest {
         List<String> documents = readDocumentList();
         List<List<String>> workerDocuments = spreadDocumentList(numWorkers, documents);
         List<Task> tasks = new ArrayList<>();
-        //to be implemented
+
+        for(List<String> singleWorkerDocs : workerDocuments){
+            tasks.add(new Task(searchTerms, singleWorkerDocs));
+        }
 
         return tasks;
     }
 
     private List<Result> sendTasksToWorkers(List<String> workers, List<Task> tasks){
         List<Result> results = new ArrayList<>();
-        //to be implemented
+        CompletableFuture<Result>[] futures = new CompletableFuture[tasks.size()];
+
+        for(int i = 0; i < workers.size(); i++){
+            futures[i] = webClient.sendTask(workers.get(i),
+                    SerializationUtils.serialize(tasks.get(i)));
+        }
+
+        for(CompletableFuture<Result> future : futures){
+            try {
+                results.add(future.get());
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            } catch (ExecutionException e) {
+                e.printStackTrace();
+            }
+        }
 
         return results;
-
     }
 
-    private List<SearchModel.Response.DocumentStats> aggregateResults(List<Result> results){
-        //to be implemented
+    private List<SearchModel.Response.DocumentStats> aggregateResults(List<Result> results, List<String> searchTerms){
+        Map<String, DocumentData> allDocumentsResults = new HashMap<>();
 
-        return null;
+        //combine all results from nodes into one result
+        for(Result result : results)
+            allDocumentsResults.putAll(result.getDocumentResults());
+
+        Map<Double, List<String>> scoredDocuments = TFIDF.getDocumentsScore(allDocumentsResults, searchTerms);
+
+        return generateSortedDocumentStats(scoredDocuments);
+    }
+
+    private List<SearchModel.Response.DocumentStats> generateSortedDocumentStats(Map<Double, List<String>> scoredDocuments){
+        List<SearchModel.Response.DocumentStats> sortedDocumentStats = new ArrayList<>();
+
+        for(var scoreAndDocs : scoredDocuments.entrySet()){
+            double score = scoreAndDocs.getKey();
+            for(String doc : scoreAndDocs.getValue()){
+                SearchModel.Response.DocumentStats documentStats = SearchModel.Response.DocumentStats
+                        .newBuilder()
+                        .setScore(score)
+                        .setDocumentName(doc)
+                        .build();
+
+                sortedDocumentStats.add(documentStats);
+            }
+        }
+        return sortedDocumentStats;
     }
 
     private List<List<String>> spreadDocumentList(int numWorkers, List<String> documents){
+        int docsPerWorker = documents.size() / numWorkers;
+        int additionalDocs = documents.size() % numWorkers;
+        List<List<String>> spread = new ArrayList<>();
 
-        //to be implemented
+        int startPosition = 0;
+        for(int i = 0; i < numWorkers; i++){
+            int totalDocs = docsPerWorker + (additionalDocs > 0 ? additionalDocs-- : 0);
 
-        return null;
+            List<String> currentSet = documents.subList(startPosition, startPosition + totalDocs);
+            spread.add(currentSet);
+
+            startPosition += totalDocs;
+        }
+
+        return spread;
     }
 
     private List<String> readDocumentList(){
+        List<String> documents = new ArrayList<>();
+        File documentsDirectory = new File(DIRECTORY);
 
-        //to be implemented
+        for(String doc : documentsDirectory.list()){
+            documents.add(DIRECTORY + "/" + doc);
+        }
 
-        return null;
+        return documents;
     }
-
 }
