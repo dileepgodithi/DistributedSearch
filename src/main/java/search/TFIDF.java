@@ -27,9 +27,13 @@ public class TFIDF {
     public static List<String> getWordsFromDocument(List<String> lines){
         List<String> words = new ArrayList<>();
         for(String line : lines){
-            words.addAll(Arrays.asList(line.split("(\\.)+|(,)+|( )+|(-)+|(\\?)+|(!)+|(;)+|(:)+|(/d)+|(/n)+")));
+            words.addAll(getWordsFromLine(line));
         }
         return words;
+    }
+
+    public static List<String> getWordsFromLine(String line){
+        return Arrays.asList(line.split("(\\.)+|(,)+|( )+|(-)+|(\\?)+|(!)+|(;)+|(:)+|(/d)+|(/n)+"));
     }
 
     //calculate all term TFs and store in map
