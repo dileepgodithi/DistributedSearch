@@ -66,6 +66,8 @@ public class SearchCoordinator implements OnRequest {
     }
 
     private List<Task> createTasks(int numWorkers, List<String> searchTerms){
+        List<String> documents = readDocumentList();
+        List<List<String>> workerDocuments = spreadDocumentList(numWorkers, documents);
         List<Task> tasks = new ArrayList<>();
         //to be implemented
 
@@ -81,6 +83,20 @@ public class SearchCoordinator implements OnRequest {
     }
 
     private List<SearchModel.Response.DocumentStats> aggregateResults(List<Result> results){
+        //to be implemented
+
+        return null;
+    }
+
+    private List<List<String>> spreadDocumentList(int numWorkers, List<String> documents){
+
+        //to be implemented
+
+        return null;
+    }
+
+    private List<String> readDocumentList(){
+
         //to be implemented
 
         return null;
