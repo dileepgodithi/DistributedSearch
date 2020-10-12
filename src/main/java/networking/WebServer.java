@@ -28,6 +28,7 @@ public class WebServer {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        System.out.println("Server started "+ server.getAddress());
 
         HttpContext taskContext = server.createContext(onRequest.getEndPoint());
         HttpContext statusContext = server.createContext(STATUS_ENDPOINT);
@@ -55,8 +56,11 @@ public class WebServer {
             return;
         }
 
+        System.out.println("Handle task request");
         byte[] requestBytes = exchange.getRequestBody().readAllBytes();
+        System.out.println(new String(requestBytes));
         byte[] responseBytes = onRequest.handleRequest(requestBytes);
+        System.out.println(new String(responseBytes));
 
         sendResponse(responseBytes, exchange);
     }
