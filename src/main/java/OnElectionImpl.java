@@ -46,7 +46,7 @@ public class OnElectionImpl implements OnElection {
 
     private void registerToCluster(String endPoint, ServiceRegistry serviceRegistry) {
         try {
-            String serverAddress = String.format("http://%s:%d/%s", InetAddress.getLocalHost().getCanonicalHostName(),
+            String serverAddress = String.format("http://%s:%d%s", InetAddress.getLocalHost().getCanonicalHostName(),
                     this.port, endPoint);
             serviceRegistry.registerToCluster(serverAddress);
         } catch (KeeperException e) {

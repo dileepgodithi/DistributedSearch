@@ -59,13 +59,17 @@ public class SearchCoordinator implements OnRequest {
         List<String> terms = TFIDF.getWordsFromLine(request.getSearchQuery());
         List<String> workers = workersServiceRegistry.getAllServiceAddresses();
 
+        System.out.println("search terms: "+terms);
+        System.out.println("workers: "+workers);
         if(workers.isEmpty()){
             System.out.println("No workers are available");
             return response.build();
         }
 
         List<Task> tasks = createTasks(workers.size(), terms);
+        System.out.println("tasks: "+tasks);
         List<Result> results = sendTasksToWorkers(workers, tasks);
+        System.out.println("results: "+results);
 
         List<SearchModel.Response.DocumentStats> sortedDocuments = aggregateResults(results, terms);
         response.addAllRelevantDocuments(sortedDocuments);
@@ -74,8 +78,11 @@ public class SearchCoordinator implements OnRequest {
     }
 
     private List<Task> createTasks(int numWorkers, List<String> searchTerms){
+        System.out.println("Enter createTasks");
         List<String> documents = readDocumentList();
+        System.out.println("Read documents: "+ documents);
         List<List<String>> workerDocuments = spreadDocumentList(numWorkers, documents);
+        System.out.println("Worker documents: " + workerDocuments);
         List<Task> tasks = new ArrayList<>();
 
         for(List<String> singleWorkerDocs : workerDocuments){
@@ -141,13 +148,14 @@ public class SearchCoordinator implements OnRequest {
         int docsPerWorker = documents.size() / numWorkers;
         int additionalDocs = documents.size() % numWorkers;
         List<List<String>> spread = new ArrayList<>();
-
+        System.out.println("docs/worker, additional " + docsPerWorker + " " +additionalDocs);
         int startPosition = 0;
         for(int i = 0; i < numWorkers; i++){
-            int totalDocs = docsPerWorker + (additionalDocs > 0 ? additionalDocs-- : 0);
+            int totalDocs = docsPerWorker + (additionalDocs > 0 ? 1 : 0);
+            additionalDocs--;
 
             List<String> currentSet = documents.subList(startPosition, startPosition + totalDocs);
-            spread.add(currentSet);
+            spread.add(new ArrayList<>(currentSet));
 
             startPosition += totalDocs;
         }
@@ -159,10 +167,12 @@ public class SearchCoordinator implements OnRequest {
         List<String> documents = new ArrayList<>();
         File documentsDirectory = new File(DIRECTORY);
 
+        System.out.println("Enter read document list");
         for(String doc : documentsDirectory.list()){
             documents.add(DIRECTORY + "/" + doc);
         }
 
+        System.out.println(documents);
         return documents;
     }
 }
